@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0a0a0a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <title>Companion App</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --c-bg:           #0a0a0a;
+      --c-bg-card:      #111111;
+      --c-bg-hover:     #1a1a1a;
+      --c-border:       #2e2e2e;
+      --c-teal:         #4ECDC4;
+      --c-teal-dim:     rgba(78,205,196,0.12);
+      --c-green:        #4CAF50;
+      --c-yellow:       #F5C518;
+      --c-text:         #FFFFFF;
+      --c-text-sub:     #888888;
+      --c-text-muted:   #444444;
+      --c-avatar:       #2a2a2a;
+      --r-card:         14px;
+      --r-pill:         999px;
+      --tx-screen:      380ms cubic-bezier(0.4, 0, 0.2, 1);
+      --tx-fast:        150ms ease;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #000;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100dvh;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+      overflow: hidden;
+    }
+
+    #app {
+      width: 100%;
+      max-width: 430px;
+      height: 100dvh;
+      background: var(--c-bg);
+      position: relative;
+      overflow: hidden;
+      color: var(--c-text);
+    }
+
+    /* ── Screens ── */
+    .screen {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      overflow-x: hidden;
+      scrollbar-width: none;
+      transform: translateX(100%);
+      transition: transform var(--tx-screen), opacity var(--tx-screen);
+      will-change: transform;
+      padding-bottom: env(safe-area-inset-bottom, 16px);
+    }
+    .screen::-webkit-scrollbar { display: none; }
+    .screen.active  { transform: translateX(0); opacity: 1; }
+    .screen.behind  { transform: translateX(-28%); opacity: 0.7; transition: transform var(--tx-screen), opacity var(--tx-screen); }
+
+    /* ── Header ── */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: max(env(safe-area-inset-top, 0px), 20px) 22px 12px;
+      flex-shrink: 0;
+    }
+    .back-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      color: var(--c-text);
+      font-size: 17px;
+      font-weight: 600;
+      -webkit-tap-highlight-color: transparent;
+      transition: opacity var(--tx-fast);
+    }
+    .back-btn:active { opacity: 0.6; }
+    .avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: var(--c-avatar);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      cursor: pointer;
+      transition: background var(--tx-fast);
+    }
+    .avatar:active { background: #3a3a3a; }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--c-bg-card);
+      border: 1px solid var(--c-border);
+      border-radius: var(--r-card);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: background var(--tx-fast), transform var(--tx-fast);
+    }
+    .card:active { background: var(--c-bg-hover); transform: scale(0.985); }
+
+    /* ═══════════════════════════════════
+       HOME SCREEN
+    ═══════════════════════════════════ */
+    #screen-home .header-greeting {
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--c-text);
+    }
+    #screen-home .header-greeting span {
+      color: var(--c-teal);
+      font-weight: 700;
+    }
+
+    .device-section {
+      flex: 0 0 auto;
+      padding: 12px 22px 20px;
+      position: relative;
+    }
+    .device-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .device-label-left {
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      z-index: 1;
+    }
+    .device-label-left .label-text {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+    .device-label-left .label-title {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--c-text-sub);
+      line-height: 1;
+    }
+    .device-label-left .label-value {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--c-text);
+      line-height: 1;
+    }
+    .device-label-right {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      text-align: right;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .device-label-right .label-text {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 1px;
+    }
+    .device-label-right .label-title {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--c-text-sub);
+    }
+    .device-label-right .label-value {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--c-text);
+    }
+
+    .nav-cards-list {
+      padding: 0 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    .nav-card {
+      padding: 18px 16px;
+    }
+    .nav-card .card-inner {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      width: 100%;
+    }
+    .nav-card-icon {
+      width: 32px;
+      height: 32px;
+      background: #1a1a1a;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .nav-card-label {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--c-text);
+      flex: 1;
+    }
+    .nav-card-chevron {
+      color: var(--c-text-muted);
+      font-size: 20px;
+      line-height: 1;
+    }
+
+    .home-footer {
+      display: flex;
+      justify-content: space-between;
+      padding: 20px 22px 16px;
+      margin-top: auto;
+      border-top: 1px solid #161616;
+    }
+    .home-footer span {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--c-text-sub);
+      cursor: pointer;
+      transition: color var(--tx-fast);
+    }
+    .home-footer span:active { color: var(--c-teal); }
+
+    /* ═══════════════════════════════════
+       RECIPE LIBRARY SCREEN
+    ═══════════════════════════════════ */
+    .recipe-hero {
+      padding: 16px 22px 24px;
+      font-size: 34px;
+      font-weight: 800;
+      line-height: 1.25;
+      letter-spacing: -0.5px;
+    }
+    .hero-img {
+      display: inline-block;
+      width: 76px;
+      height: 48px;
+      border-radius: 10px;
+      vertical-align: middle;
+      margin: 0 5px;
+      object-fit: cover;
+      position: relative;
+      top: -2px;
+    }
+    .hero-accent {
+      color: var(--c-teal);
+      text-decoration: underline;
+      text-underline-offset: 4px;
+      text-decoration-thickness: 2px;
+    }
+
+    .tab-bar {
+      display: flex;
+      gap: 4px;
+      margin: 0 22px 22px;
+      background: #0f0f0f;
+      border: 1px solid var(--c-border);
+      border-radius: var(--r-pill);
+      padding: 4px;
+      flex-shrink: 0;
+    }
+    .tab {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      padding: 9px 6px;
+      border-radius: var(--r-pill);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--c-text-sub);
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: background var(--tx-fast), color var(--tx-fast);
+    }
+    .tab.active {
+      background: #1e1e1e;
+      color: var(--c-text);
+    }
+
+    .recipe-list {
+      padding: 0 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .recipe-card {
+      height: 78px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .recipe-thumb {
+      width: 78px;
+      height: 78px;
+      flex-shrink: 0;
+      border-radius: 10px 0 0 10px;
+    }
+    .recipe-card-body {
+      padding: 0 16px;
+      flex: 1;
+      display: flex;
+      align-items: center;
+    }
+    .recipe-card-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--c-text);
+    }
+    .recipe-card-sub {
+      font-size: 12px;
+      font-weight: 400;
+      color: var(--c-text-sub);
+      margin-top: 3px;
+    }
+
+    /* ═══════════════════════════════════
+       CHARGING SCREEN
+    ═══════════════════════════════════ */
+    .charging-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      padding: 20px 22px 40px;
+    }
+    .battery-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 8px;
+    }
+    .battery-info .battery-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--c-text-sub);
+    }
+    .battery-info .battery-pct {
+      font-size: 46px;
+      font-weight: 800;
+      color: var(--c-text);
+      line-height: 1;
+    }
+    .charge-bar-wrap {
+      width: 180px;
+      height: 5px;
+      background: #1e1e1e;
+      border-radius: 3px;
+      margin-bottom: 40px;
+      overflow: hidden;
+    }
+    .charge-bar-fill {
+      height: 100%;
+      background: var(--c-green);
+      border-radius: 3px;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ═══ HOME ═══ -->
+  <div class="screen active" id="screen-home">
+    <div class="header">
+      <div class="header-greeting">Hello, <span>Impulsian</span></div>
+      <div class="avatar">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="8" r="4" fill="#666"/>
+          <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="#666" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="device-section">
+      <div class="device-wrapper">
+
+        <!-- Software label left -->
+        <div class="device-label-left">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <rect x="3" y="3" width="18" height="18" rx="2" stroke="#4ECDC4" stroke-width="1.5" fill="none"/>
+            <rect x="7" y="3" width="10" height="7" rx="1" stroke="#4ECDC4" stroke-width="1.5" fill="none"/>
+            <rect x="9" y="14" width="6" height="6" rx="1" stroke="#4ECDC4" stroke-width="1.5" fill="none"/>
+          </svg>
+          <div class="label-text">
+            <span class="label-title">Software Version</span>
+            <span class="label-value">Up to date</span>
+          </div>
+        </div>
+
+        <!-- Cooktop SVG -->
+        <svg width="220" height="160" viewBox="0 0 280 180" style="margin: 0 auto; display:block;">
+          <defs>
+            <radialGradient id="glowGrad" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#4ECDC4" stop-opacity="0.08"/>
+              <stop offset="100%" stop-color="#0a0a0a" stop-opacity="0"/>
+            </radialGradient>
+            <radialGradient id="bgGrad" cx="50%" cy="40%" r="60%">
+              <stop offset="0%" stop-color="#1e1e1e"/>
+              <stop offset="100%" stop-color="#111111"/>
+            </radialGradient>
+          </defs>
+          <!-- Body -->
+          <rect x="8" y="8" width="264" height="148" rx="18" fill="url(#bgGrad)" stroke="#2a2a2a" stroke-width="1"/>
+          <rect x="8" y="8" width="264" height="148" rx="18" fill="url(#glowGrad)"/>
+          <!-- Control strip -->
+          <rect x="8" y="124" width="264" height="32" rx="0" fill="#131313"/>
+          <rect x="8" y="138" width="264" height="18" rx="0" ry="0" fill="#0f0f0f"/>
+          <rect x="8" y="150" width="264" height="6" rx="0" fill="#111" opacity="0.5"/>
+          <rect x="8" y="124" width="264" height="2" rx="0" fill="#222"/>
+          <!-- Bottom rounded corners -->
+          <rect x="8" y="138" width="264" height="18" rx="18" fill="#111111" clip-path="url(#bottomclip)"/>
+          <!-- Burner 1 - top left -->
+          <circle cx="82" cy="70" r="36" fill="none" stroke="#222" stroke-width="2.5"/>
+          <circle cx="82" cy="70" r="26" fill="none" stroke="#1e1e1e" stroke-width="2"/>
+          <circle cx="82" cy="70" r="14" fill="none" stroke="#1e1e1e" stroke-width="1.5"/>
+          <circle cx="82" cy="70" r="6" fill="#161616"/>
+          <!-- Burner 2 - top right -->
+          <circle cx="198" cy="70" r="36" fill="none" stroke="#222" stroke-width="2.5"/>
+          <circle cx="198" cy="70" r="26" fill="none" stroke="#1e1e1e" stroke-width="2"/>
+          <circle cx="198" cy="70" r="14" fill="none" stroke="#1e1e1e" stroke-width="1.5"/>
+          <circle cx="198" cy="70" r="6" fill="#161616"/>
+          <!-- Subtle glow on left burner (active) -->
+          <circle cx="82" cy="70" r="36" fill="none" stroke="#4ECDC4" stroke-width="0.8" opacity="0.2"/>
+          <!-- Temperature display -->
+          <rect x="120" y="28" width="40" height="18" rx="4" fill="#141414" stroke="#2a2a2a" stroke-width="0.5"/>
+          <text x="140" y="40" text-anchor="middle" fill="#4ECDC4" font-size="9" font-family="Inter, monospace" font-weight="600">275°</text>
+          <!-- Control knobs -->
+          <circle cx="70"  cy="136" r="7" fill="#1a1a1a" stroke="#2e2e2e" stroke-width="1"/>
+          <circle cx="140" cy="136" r="7" fill="#1a1a1a" stroke="#2e2e2e" stroke-width="1"/>
+          <circle cx="210" cy="136" r="7" fill="#1a1a1a" stroke="#2e2e2e" stroke-width="1"/>
+          <line x1="70"  y1="129" x2="70"  y2="133" stroke="#3a3a3a" stroke-width="1.5"/>
+          <line x1="140" y1="129" x2="140" y2="133" stroke="#3a3a3a" stroke-width="1.5"/>
+          <line x1="210" y1="129" x2="210" y2="133" stroke="#3a3a3a" stroke-width="1.5"/>
+          <!-- Vent slits right side -->
+          <line x1="248" y1="45" x2="260" y2="45" stroke="#222" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="248" y1="53" x2="260" y2="53" stroke="#222" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="248" y1="61" x2="260" y2="61" stroke="#222" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="248" y1="69" x2="260" y2="69" stroke="#222" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="248" y1="77" x2="260" y2="77" stroke="#222" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+
+        <!-- Battery label right -->
+        <div class="device-label-right">
+          <div class="label-text">
+            <span class="label-title">Battery Charge</span>
+            <span class="label-value" style="display:flex;align-items:center;gap:6px;justify-content:flex-end;">
+              <svg width="20" height="12" viewBox="0 0 25 14">
+                <rect x="0.5" y="0.5" width="21" height="13" rx="3" fill="none" stroke="#4CAF50" stroke-width="1.2"/>
+                <rect x="21.5" y="4" width="3" height="6" rx="1.5" fill="#4CAF50"/>
+                <rect x="2" y="2" width="18" height="10" rx="2" fill="#4CAF50"/>
+                <path d="M13 3.5 L10 7 h3 L9 12 L16 6.5 h-3.5z" fill="white" opacity="0.85"/>
+              </svg>
+              100%
+            </span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="nav-cards-list">
+      <div class="card nav-card" data-nav="recipes">
+        <div class="card-inner">
+          <div class="nav-card-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4ECDC4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+              <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+            </svg>
+          </div>
+          <span class="nav-card-label">Recipe Library</span>
+          <span class="nav-card-chevron">›</span>
+        </div>
+      </div>
+      <div class="card nav-card" data-nav="charging">
+        <div class="card-inner">
+          <div class="nav-card-icon">
+            <svg width="16" height="18" viewBox="0 0 24 24" fill="#F5C518">
+              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+            </svg>
+          </div>
+          <span class="nav-card-label">Charging</span>
+          <span class="nav-card-chevron">›</span>
+        </div>
+      </div>
+      <div class="card nav-card">
+        <div class="card-inner">
+          <div class="nav-card-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="1.8" stroke-linecap="round">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+          </div>
+          <span class="nav-card-label">Settings</span>
+          <span class="nav-card-chevron">›</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="home-footer">
+      <span>Contact Support</span>
+      <span>My Cooktop</span>
+    </div>
+  </div>
+
+  <!-- ═══ RECIPES ═══ -->
+  <div class="screen" id="screen-recipes">
+    <div class="header">
+      <div class="back-btn" data-back="home">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+        Recipe Library
+      </div>
+      <div class="avatar">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="8" r="4" fill="#666"/>
+          <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="#666" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="recipe-hero">
+      Precision
+      <span class="hero-img" style="background:linear-gradient(135deg,#8B4513,#c0602a);"></span>
+      and
+      <span class="hero-img" style="background:linear-gradient(135deg,#4a5a3a,#6a8a4a);"></span>
+      power
+      <br>
+      <span class="hero-img" style="background:linear-gradient(135deg,#c8b060,#e8c880);"></span>
+      <span class="hero-accent">perfected</span>
+    </div>
+
+    <div class="tab-bar">
+      <div class="tab" data-tab="browse">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+          <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+        </svg>
+        Browse
+      </div>
+      <div class="tab active" data-tab="now-cooking">
+        <svg width="13" height="14" viewBox="0 0 24 24" fill="#F5C518">
+          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+        </svg>
+        Now Cooking
+      </div>
+      <div class="tab" data-tab="my-recipes">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+        </svg>
+        My Recipes
+      </div>
+    </div>
+
+    <div class="recipe-list" id="recipe-list"></div>
+  </div>
+
+  <!-- ═══ CHARGING ═══ -->
+  <div class="screen" id="screen-charging">
+    <div class="header">
+      <div class="back-btn" data-back="home">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+        Charging
+      </div>
+      <div class="avatar">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="8" r="4" fill="#666"/>
+          <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="#666" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="charging-body">
+      <div class="battery-row">
+        <svg width="64" height="40" viewBox="0 0 64 40">
+          <rect x="1" y="4" width="54" height="32" rx="5" fill="none" stroke="#4CAF50" stroke-width="2"/>
+          <rect x="55" y="13" width="8" height="14" rx="3" fill="#4CAF50"/>
+          <rect x="4" y="7" width="48" height="26" rx="3" fill="#4CAF50"/>
+          <path d="M36 10 L27 21 h8 L24 32 L40 18.5 h-8.5z" fill="white" opacity="0.9"/>
+        </svg>
+        <div class="battery-info">
+          <div class="battery-label">Battery Charge</div>
+          <div class="battery-pct">100%</div>
+        </div>
+      </div>
+
+      <div class="charge-bar-wrap">
+        <div class="charge-bar-fill"></div>
+      </div>
+
+      <!-- Cooktop SVG (charging view) -->
+      <svg width="100%" viewBox="0 0 340 200" style="max-width:340px;">
+        <defs>
+          <radialGradient id="glowGrad2" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#4ECDC4" stop-opacity="0.1"/>
+            <stop offset="100%" stop-color="#0a0a0a" stop-opacity="0"/>
+          </radialGradient>
+          <radialGradient id="bgGrad2" cx="50%" cy="40%" r="60%">
+            <stop offset="0%" stop-color="#1e1e1e"/>
+            <stop offset="100%" stop-color="#111111"/>
+          </radialGradient>
+        </defs>
+        <rect x="8" y="8" width="324" height="164" rx="20" fill="url(#bgGrad2)" stroke="#2a2a2a" stroke-width="1"/>
+        <rect x="8" y="8" width="324" height="164" rx="20" fill="url(#glowGrad2)"/>
+        <rect x="8" y="138" width="324" height="34" rx="0" fill="#111"/>
+        <rect x="8" y="154" width="324" height="18" rx="20" fill="#111"/>
+        <rect x="8" y="138" width="324" height="2" fill="#1e1e1e"/>
+        <!-- Burner 1 top-left -->
+        <circle cx="96"  cy="80" r="42" fill="none" stroke="#222" stroke-width="2.5"/>
+        <circle cx="96"  cy="80" r="30" fill="none" stroke="#1e1e1e" stroke-width="2"/>
+        <circle cx="96"  cy="80" r="16" fill="none" stroke="#1e1e1e" stroke-width="1.5"/>
+        <circle cx="96"  cy="80" r="7"  fill="#161616"/>
+        <!-- Burner 2 top-right -->
+        <circle cx="244" cy="80" r="42" fill="none" stroke="#222" stroke-width="2.5"/>
+        <circle cx="244" cy="80" r="30" fill="none" stroke="#1e1e1e" stroke-width="2"/>
+        <circle cx="244" cy="80" r="16" fill="none" stroke="#1e1e1e" stroke-width="1.5"/>
+        <circle cx="244" cy="80" r="7"  fill="#161616"/>
+        <!-- Charging glow on both burners -->
+        <circle cx="96"  cy="80" r="42" fill="none" stroke="#4ECDC4" stroke-width="1" opacity="0.25"/>
+        <circle cx="244" cy="80" r="42" fill="none" stroke="#4CAF50" stroke-width="1" opacity="0.15"/>
+        <!-- Temp display -->
+        <rect x="148" y="30" width="44" height="20" rx="4" fill="#141414" stroke="#2a2a2a" stroke-width="0.5"/>
+        <text x="170" y="44" text-anchor="middle" fill="#4ECDC4" font-size="9" font-family="Inter,monospace" font-weight="600">275°</text>
+        <!-- Control knobs -->
+        <circle cx="88"  cy="151" r="8" fill="#1a1a1a" stroke="#2e2e2e" stroke-width="1"/>
+        <circle cx="170" cy="151" r="8" fill="#1a1a1a" stroke="#2e2e2e" stroke-width="1"/>
+        <circle cx="252" cy="151" r="8" fill="#1a1a1a" stroke="#2e2e2e" stroke-width="1"/>
+        <line x1="88"  y1="143" x2="88"  y2="147" stroke="#3a3a3a" stroke-width="1.5"/>
+        <line x1="170" y1="143" x2="170" y2="147" stroke="#3a3a3a" stroke-width="1.5"/>
+        <line x1="252" y1="143" x2="252" y2="147" stroke="#3a3a3a" stroke-width="1.5"/>
+        <!-- Vent slits -->
+        <line x1="305" y1="50" x2="320" y2="50" stroke="#222" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="305" y1="60" x2="320" y2="60" stroke="#222" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="305" y1="70" x2="320" y2="70" stroke="#222" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="305" y1="80" x2="320" y2="80" stroke="#222" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="305" y1="90" x2="320" y2="90" stroke="#222" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ── Recipe data ──
+  const recipes = [
+    { id: 1, title: 'Seared Salmon',       sub: '4 burners · 18 min',  color: 'linear-gradient(135deg,#8B4513,#c0602a)' },
+    { id: 2, title: 'Garlic Pasta',         sub: '2 burners · 22 min',  color: 'linear-gradient(135deg,#d4a843,#b88c30)' },
+    { id: 3, title: 'Mushroom Risotto',     sub: '3 burners · 35 min',  color: 'linear-gradient(135deg,#7a6a4a,#5a4a30)' },
+    { id: 4, title: 'Stir-Fry Vegetables', sub: '4 burners · 12 min',  color: 'linear-gradient(135deg,#5a7a3a,#3a5a20)' },
+    { id: 5, title: 'Poached Eggs',         sub: '1 burner  · 8 min',   color: 'linear-gradient(135deg,#c8b060,#a89040)' },
+    { id: 6, title: 'Pan Seared Steak',     sub: '2 burners · 14 min',  color: 'linear-gradient(135deg,#8a3a2a,#6a2010)' },
+  ];
+
+  function renderRecipes() {
+    const list = document.getElementById('recipe-list');
+    list.innerHTML = recipes.map(r => `
+      <div class="card recipe-card">
+        <div class="recipe-thumb" style="background:${r.color};"></div>
+        <div class="recipe-card-body">
+          <div>
+            <div class="recipe-card-title">${r.title}</div>
+            <div class="recipe-card-sub">${r.sub}</div>
+          </div>
+        </div>
+        <svg style="margin-right:14px;flex-shrink:0;" width="8" height="14" viewBox="0 0 8 14" fill="none">
+          <path d="M1 1l6 6-6 6" stroke="#444" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+    `).join('');
+  }
+
+  // ── Router ──
+  let current = 'home';
+
+  function navigate(to) {
+    if (to === current) return;
+
+    const fromEl = document.getElementById(`screen-${current}`);
+    const toEl   = document.getElementById(`screen-${to}`);
+    const isBack = to === 'home';
+
+    if (isBack) {
+      // Slide current right out, bring home back from left
+      toEl.style.transition = 'none';
+      toEl.style.transform  = 'translateX(-28%)';
+      toEl.style.opacity    = '0.7';
+      toEl.offsetHeight; // force reflow
+      toEl.style.transition = '';
+      toEl.classList.add('active');
+      toEl.style.transform  = '';
+      toEl.style.opacity    = '';
+
+      fromEl.style.transform = 'translateX(100%)';
+      fromEl.style.opacity   = '1';
+      fromEl.addEventListener('transitionend', () => {
+        fromEl.classList.remove('active');
+        fromEl.style.transform = '';
+        fromEl.style.opacity   = '';
+      }, { once: true });
+    } else {
+      // Slide home to left, bring new screen from right
+      fromEl.classList.add('behind');
+      fromEl.classList.remove('active');
+      toEl.classList.add('active');
+      fromEl.addEventListener('transitionend', () => {
+        fromEl.classList.remove('behind');
+      }, { once: true });
+    }
+
+    current = to;
+  }
+
+  // ── Event delegation ──
+  document.getElementById('app').addEventListener('click', e => {
+    // Navigation cards
+    const navEl = e.target.closest('[data-nav]');
+    if (navEl) { navigate(navEl.dataset.nav); return; }
+
+    // Back buttons
+    const backEl = e.target.closest('[data-back]');
+    if (backEl) { navigate(backEl.dataset.back); return; }
+
+    // Tabs
+    const tabEl = e.target.closest('[data-tab]');
+    if (tabEl) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      tabEl.classList.add('active');
+      return;
+    }
+  });
+
+  // ── Init ──
+  renderRecipes();
+</script>
+</body>
+</html>
